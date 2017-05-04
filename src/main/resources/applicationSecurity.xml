@@ -13,8 +13,6 @@
 		<mvc:interceptor>
 			<!-- 拦截要拦截的请求路径:/*:只拦截项目根目录的第一级请求；/**：拦截项目根目录及其子目录的请求 -->
 				<mvc:mapping path="/*/*"/>
-			<!-- 需排除拦截的地址 -->
-			<!-- <mvc:exclude-mapping path="/web/*/*"/> -->
 			<!-- 拦截器的实现类 -->
 			<bean class="com.spring.interceptor.AuthInterceptor"/>
 		</mvc:interceptor>
