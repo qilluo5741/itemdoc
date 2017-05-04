@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+						http://www.springframework.org/schema/beans/spring-beans.xsd
+						http://www.springframework.org/schema/aop 
+						http://www.springframework.org/schema/aop/spring-aop.xsd
+						http://www.springframework.org/schema/context 
+						http://www.springframework.org/schema/context/spring-context.xsd
+						http://www.springframework.org/schema/tx 
+						http://www.springframework.org/schema/tx/spring-tx.xsd">
+	<!-- 启用注解 -->
+	<context:annotation-config />
+	<context:property-placeholder location="classpath:mqconfig.properties" ignore-unresolvable="true" />
+	<!-- ConnectionConnectionFactory JMS -->
+	<bean id="targetConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+		<property name="brokerURL" value="${brokerURL}" />
+	</bean>
+	<bean id="pooledConnectionFactory" class="org.apache.activemq.jms.pool.PooledConnectionFactory">
+		<property name="connectionFactory" ref="targetConnectionFactory" />
+		<property name="maxConnections" value="${maxConnections}" />
+	</bean>
+	<bean id="connectionFactory" class="org.springframework.jms.connection.SingleConnectionFactory">
+		<property name="targetConnectionFactory" ref="pooledConnectionFactory" />
+	</bean>
+	<!-- SpringJMS -->
+	<bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+		<!-- connectionFactorySpringConnectionFactory -->
+		<property name="connectionFactory" ref="connectionFactory" />
+	</bean>
+	<bean id="Consumer" class="org.apache.activemq.command.ActiveMQQueue">
+		<constructor-arg>
+			<value>itemdoc</value>
+		</constructor-arg>
+	</bean>
+	<!-- 消费者 -->
+	<bean id="consumerMessageListener" class="com.spring.listener.MQConsumerListener"></bean>
+	<bean id="jmsContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+		<property name="connectionFactory" ref="connectionFactory" />
+		<property name="destination" ref="Consumer"/>
+		<property name="messageListener" ref="consumerMessageListener" />
+	</bean> 
+</beans>

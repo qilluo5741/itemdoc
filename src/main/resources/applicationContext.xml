@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+						http://www.springframework.org/schema/beans/spring-beans.xsd
+						http://www.springframework.org/schema/aop 
+						http://www.springframework.org/schema/aop/spring-aop.xsd
+						http://www.springframework.org/schema/context 
+						http://www.springframework.org/schema/context/spring-context.xsd
+						http://www.springframework.org/schema/tx 
+						http://www.springframework.org/schema/tx/spring-tx.xsd">
+	<!-- 配置扫描包 -->
+	<context:component-scan base-package="com.spring"/>
+	<!-- 启用注解 -->
+	<context:annotation-config/>
+	<context:property-placeholder location="classpath:db.properties" ignore-unresolvable="true"/>
+	<context:property-placeholder location="classpath:config.properties" ignore-unresolvable="true"/>
+	<context:property-placeholder location="classpath:jedis.properties" ignore-unresolvable="true" />
+	<!-- 配置数据源 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+		<property name="driverClass" value="${driverClass}" />
+		<property name="jdbcUrl" value="${jdbcUrl}" />
+		<property name="user" value="${user}" />
+		<property name="password" value="${password}" />
+		<property name="minPoolSize" value="${minPoolSize}" /> <!--连接池中保留的最小连接数。 -->
+		<!--连接池中保留的最大连接数。Default: 15 -->
+		<property name="maxPoolSize" value="${maxPoolSize}" />
+		<!--初始化时获取的连接数，取值应在minPoolSize与maxPoolSize之间。Default: 3 -->
+		<property name="initialPoolSize" value="${initialPoolSize}" />
+		<!--最大空闲时间,60秒内未使用则连接被丢弃。若为0则永不丢弃。Default: 0 -->
+		<property name="maxIdleTime" value="${maxIdleTime}" />
+		<!--当连接池中的连接耗尽的时候c3p0一次同时获取的连接数。Default: 3 -->
+		<property name="acquireIncrement" value="${acquireIncrement}" />
+		<!-- JDBC的标准参数，用以控制数据源内加载的PreparedStatements数量。但由于预缓存的statements 属于单个connection而不是整个连接池。所以设置这个参数需要考虑到多方面的因素。 
+			如果maxStatements与maxStatementsPerConnection均为0，则缓存被关闭。Default: 0 -->
+		<property name="maxStatements" value="${maxStatements}" />
+		<!--连接池用完时客户调用getConnection()后等待获取连接的时间，单位：毫秒。超时后会抛出 -->
+		<!--SQLEXCEPTION，如果设置0，则无限等待。Default:0 -->
+		<property name="checkoutTimeout" value="${checkoutTimeout}" />
+		<!--每60秒检查所有连接池中的空闲连接。Default: 0 -->
+		<property name="idleConnectionTestPeriod" value="${idleConnectionTestPeriod}" />
+		<!--定义在从数据库获取新连接失败后重复尝试的次数。Default: 30 -->
+		<property name="acquireRetryAttempts" value="${acquireRetryAttempts}" />
+		<!-- 获取连接失败将会引起所有等待连接池来获取连接的线程抛出异常。但是数据源仍有效 保留，并在下次调用getConnection()的时候继续尝试获取连接。如果设为true，那么在尝试 
+			获取连接失败后该数据源将申明已断开并永久关闭。Default: false -->
+		<property name="breakAfterAcquireFailure" value="${breakAfterAcquireFailure}" />
+		<!-- 因性能消耗大请只在需要的时候使用它。如果设为true那么在每个connection提交的 时候都将校验其有效性。建议使用idleConnectionTestPeriod或automaticTestTable 
+			等方法来提升连接测试的性能。Default: false -->
+		<property name="testConnectionOnCheckout" value="${testConnectionOnCheckout}" />
+	</bean>
+	<!-- 配置数据库核心工厂; 注入dataSource ;向 sqlSessionFactory提供mybatis的配置文件 -->
+	<bean id="sqlSessionFactory" name="yssqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="mapperLocations" value="classpath*:mapper/*Mapper.xml" />
+		<property name="configurationProperties">
+			<props>
+				<!-- 开启缓存 -->
+				<prop key="cacheEnabled">true</prop>
+				<!-- 关闭懒加载 -->
+				<prop key="lazyLoadingEnabled">false</prop>
+				<prop key="aggressiveLazyLoading">false</prop>
+			</props>
+		</property>
+	</bean>
+	<!-- 提供sqlSessionFactory;mapper扫描器提供需要扫描的包，有多个包用逗号隔开 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+		<property name="basePackage" value="com.spring.mapper"/>
+	</bean>
+	<!-- 声明事物~~~ -->
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	<!-- 注解方式配置事务 -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	<!-- ==============================redis参数配置============================ -->
+	<!-- redis连接池参数配置 -->
+	<bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">
+		<!-- 连接耗尽时是否阻塞, false报异常,ture阻塞直到超时, 默认true -->
+		<property name="blockWhenExhausted" value="${redis.blockWhenExhausted}"/>
+		<!-- 设置的逐出策略类名, 默认DefaultEvictionPolicy(当连接超过最大空闲时间,或连接数超过最大空闲连接数) -->
+		<property name="evictionPolicyClassName" value="${redis.evictionPolicyClassName}"/>
+		<!-- 是否启用pool的jmx管理功能, 默认true -->
+		<property name="jmxEnabled" value="${redis.jmxEnabled}"/>
+		<!--MBean ObjectName = new ObjectName("org.apache.commons.pool2:type=GenericObjectPool,name=" 
+			+ "pool" + i); 默认为"pool", JMX不熟,具体不知道是干啥的...默认就好. -->
+		<property name="jmxNamePrefix" value="${redis.jmxNamePrefix}" />
+		<!-- 是否启用后进先出, 默认true -->
+		<property name="lifo" value="${redis.lifo}" />
+		<!-- 最大空闲连接数, 默认8个 -->
+		<property name="maxIdle" value="${redis.maxIdle}"/>
+		<!-- 最大连接数 -->
+		<property name="maxTotal" value="${redis.maxTotal}" />
+		<!-- 获取连接时的最大等待毫秒数(如果设置为阻塞时BlockWhenExhausted),如果超时就抛异常, 小于零:阻塞不确定的时间, 默认-1 -->
+		<property name="maxWaitMillis" value="${redis.maxWaitMillis}" />
+		<!-- 逐出连接的最小空闲时间 默认1800000毫秒(30分钟) -->
+		<property name="minEvictableIdleTimeMillis" value="${redis.minEvictableIdleTimeMillis}" />
+		<!--最小空闲连接数, 默认0 -->
+		<property name="minIdle" value="${redis.minIdle}"/>
+		<!-- 每次逐出检查时 逐出的最大数目 如果为负数就是 : 1/abs(n), 默认3 -->
+		<property name="numTestsPerEvictionRun" value="${redis.numTestsPerEvictionRun}" />
+		<!-- 对象空闲多久后逐出, 当空闲时间>该值 且 空闲连接>最大空闲数 时直接逐出,不再根据MinEvictableIdleTimeMillis判断 
+			(默认逐出策略) -->
+		<property name="softMinEvictableIdleTimeMillis" value="${redis.softMinEvictableIdleTimeMillis}" />
+		<!-- 在获取连接的时候检查有效性, 默认false -->
+		<property name="testOnBorrow" value="${redis.testOnBorrow}" />
+		<!-- 在空闲时检查有效性, 默认false -->
+		<property name="testWhileIdle" value="${redis.testWhileIdle}" />
+		<!-- 逐出扫描的时间间隔(毫秒) 如果为负数,则不运行逐出线程, 默认-1 -->
+		<property name="timeBetweenEvictionRunsMillis" value="${redis.timeBetweenEvictionRunsMillis}" />
+	</bean>
+	<bean class="com.spring.util.RedisUtil" init-method="initConfig">
+		<property name="config" ref="jedisPoolConfig" />
+		<property name="address" value="${redis.address}" />
+		<property name="port" value="${redis.port}" />
+	</bean>
+</beans>

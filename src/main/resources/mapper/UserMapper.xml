@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spring.mapper.UserMapper">
+	<cache readOnly="true" size="500" flushInterval="20000" eviction="LRU"/>
+	<!-- 验证密码是否正确 -->
+	<select id="getUser" resultType="com.spring.entity.User" useCache="true">
+		select userId,userAccount,createTime,remark,roleId,isProperty,imageurl from user where userAccount=#{userAccount} and userPassword=#{userPassword} and isdelete =0
+	</select>
+	<!-- 查询全部菜单 -->
+	<resultMap type="com.spring.falseentity.MenuTypeInfo" id="getAllMenuMap">
+		<id property="menuTypeId" column="menuTypeId"/>
+		<result property="menuTypeName" column="menuTypeName"/>
+		<result property="menuTypeIcon" column="menuTypeIcon"/>
+		<collection property="menus" ofType="com.spring.entity.Menu">
+			<id property="menuId" column="menuId"/>
+			<result property="menuName" column="menuName"/>
+			<result property="menuTypeId" column="menuTypeId"/>
+			<result property="url" column="url"/>
+			<result property="menuIcon" column="menuIcon"/>
+			<result property="target" column="target"/>
+		</collection>
+	</resultMap>
+	<select id="getAllMenu" resultMap="getAllMenuMap">
+		select m.menuId,m.menuName,m.menuTypeId,m.url,m.menuIcon,m.fixedMenu,m.target,mt.menuTypeId,mt.menuTypeName,mt.menuTypeIcon from menu m,menutype mt where m.menuTypeId=mt.menuTypeId
+	</select>
+	<!-- 查询一个普通用户的角色 根据角色Id查询-->
+	<select id="getAllMenuByRoleId" resultMap="getAllMenuMap">
+		select m.*,mt.* from menu m,menutype mt,rolemeun rm where m.menuTypeId=mt.menuTypeId and rm.menuId=m.menuId and rm.roleId=#{roleId}
+	</select>
+</mapper>

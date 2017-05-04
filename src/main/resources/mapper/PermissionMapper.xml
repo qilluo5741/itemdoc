@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- mapper中定义的是mybatis对某些业务的sql语句 -->
+<mapper namespace="com.spring.mapper.PermissionMapper">
+	<cache readOnly="true" size="500" flushInterval="20000" eviction="LRU"/>
+	<!-- 根据userid查询全部角色 -->
+	<select id="getRolesByUserId" resultType="com.spring.falseentity.RoleInfo">
+		select * from roleinfo r where r.userid=#{userId} and isdelete=0 and issupper=0
+	</select>
+	<select id="getUserByUserId" resultType="com.spring.entity.User" useCache="true">
+		select userId,userAccount,createTime,remark,roleId,isProperty from user where userid=#{userId} and isdelete =0
+	</select>
+	<!-- 根据角色名，超级管理用户名得到角色存在的个数 -->
+	<select id="getRoleCount" resultType="int">
+		select count(1) from roleinfo where userid=#{userId} and roleName=#{roleName} and isdelete=0
+	</select>
+	<!-- 添加角色 -->
+	<insert id="addRole" parameterType="com.spring.falseentity.RoleInfo">
+		insert into roleinfo(roleId,roleName,createtime,isdelete,issupper,userid) values(UUID_SHORT(),#{roleName},NOW(),0,0,#{userId})
+	</insert>
+	<!-- 通过角色Id得到用户的个数 -->
+	<select id="getUserCountByRoleId" resultType="int">
+		select count(1) from user where roleId is not null and isdelete=0 and roleid=#{roleId}
+	</select>
+	<!-- 通过角色主键修改角色的状态 -->
+	<update id="updateRoleIsDeleteByRoleId">
+		update roleinfo set isdelete=1 where roleid=#{roleId}
+	</update>
+	<!-- 修改角色名字 -->
+	<update id="updateRoleNameByroleId">
+		update roleinfo set roleName=#{roleName} where roleid=#{roleId}
+	</update>
+	<!--根据userId和角色Id验证是否存在 -->
+	<select id="valRoleUserIsExists" resultType="int">
+		select count(1) from roleinfo where userid=#{userId} and roleId=#{roleId}
+	</select>
+	<!-- 根据角色查询拥有的菜单 -->
+	<select id="getExistsMenusByRoleId" resultType="com.spring.falseentity.MenusDto">
+		select m.menuId,m.menuName,mt.menuTypeName from menu m,rolemeun rm,roleinfo r,menutype mt where mt.menuTypeId=m.menuTypeId AND m.menuId=rm.menuId and r.roleid=rm.roleid and r.roleid=#{roleId}
+	</select>
+	<!-- 根据角色查询没有拥有的菜单 -->
+	<select id="getNotExistsMenusByRoleId" resultType="com.spring.falseentity.MenusDto">
+		select m.menuId,m.menuName,mt.menuTypeName from (select m_t.* from  menu m_t,rolemeun rm_t where m_t.menuId=rm_t.menuId and rm_t.roleid=(select roleid from user where userId=#{userId})) m, menutype mt where m.menuTypeId=mt.menuTypeId and  m.menuId not in (select menuId from rolemeun where roleid=#{roleId}) and m.fixedMenu=0
+	</select>
+	<!-- 查询菜单是否能够分配-->
+	<select id="getMenuIsFicedByMenuId" resultType="int">
+		select count(1) from menu where menuId=#{menuId} and fixedMenu=0
+	</select>
+	<!-- 根据角色Id和菜单Id验证是否已经存在 -->
+	<select id="getRoleMenuIsExistsByRoleIdAndMenuId" resultType="int">
+		select count(1) from rolemeun where roleId=#{roleId} and menuId=#{menuId}
+	</select>
+	<!-- 添加菜单角色分配 -->
+	<insert id="addRolemeun">
+		insert into rolemeun(roleMenuId,roleId,menuId,createTime) VALUE(UUID_SHORT(),#{roleId},#{menuId},now());
+	</insert>
+	<!-- 删除角色分配的菜单 -->
+	<delete id="removeRolemeunByRoleIdAndMenuId">
+		delete from rolemeun where roleid=#{roleId}  and menuId=#{menuId}
+	</delete>
+	<!-- 创建用户 -->
+	<insert id="addcreateUser" parameterType="com.spring.falseentity.UserDto">
+		insert into user(userId,userAccount,userPassword,createtime,isproperty,roleId,parentUserId) VALUE(UUID_SHORT(),#{userAccount},#{userPassword},NOW(),0,#{roleId},#{parentUserId})
+	</insert>
+	<!-- 验证用户账号是否已经存在 -->
+	<select id="valUserAccountIsExists" resultType="int">
+		select count(1) from user where userAccount=#{userAccount}
+	</select>
+	<!-- 查询子用户 -->
+	<select id="getChildUserInfoByUserId" resultType="com.spring.falseentity.ChildUserInfo">
+		select u.*,r.roleName from user u LEFT JOIN roleinfo r on u.roleId=r.roleid where u.isdelete=0
+	</select>
+	<!-- 验证用户是否属于当前操作的用户 -->
+	<select id="valThisUserIsUser" resultType="int">
+		select Count(1) from user where userid=#{userId} and parentUserid=#{parentUserId}
+	</select>
+	<!-- 修改用户角色 -->
+	<update id="updateUserRole">
+		update  user set roleid=#{roleId} where userid=#{userId}
+	</update>
+	<!-- 修改用户状态 -->
+	<update id="updateUserIsDeleteByuserId">
+		update  user set isdelete=1 where userid=#{userId}
+	</update>
+	<!-- 重置用户密码通过userId -->
+	<update id="resetPwdByuserId">
+		update user set userPassword=#{pwd} where userid=#{userId}
+	</update>
+</mapper>

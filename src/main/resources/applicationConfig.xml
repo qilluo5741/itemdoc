@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<bean id="" class="com.spring.util.JobUtil">
+		<property name="url" value="http://192.168.1.125/task"/>
+		<property name="token" value="123456"/>
+		<property name="backUrl" value="http://192.168.1.125/itemdoc/"/>
+	</bean>
+	<!-- ==============================高德地图==================================-->
+	<bean name="gaodeConfig" class="com.spring.config.GaodeConfig">
+		<property name="appKey"  value="${gaode.appKey}"/>
+		<property name="tableid" value="${gaode.tableid}"/>
+	</bean>
+</beans>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="  http://www.springframework.org/schema/tx   http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+        http://www.springframework.org/schema/beans  http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context  http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd">
+	<!--spring mvc中配置一个全局的拦截器链 -->
+	<mvc:interceptors>
+		<!-- 配置后台完整的拦截器,按照配置顺序执行 -->
+		<mvc:interceptor>
+			<!-- 拦截要拦截的请求路径:/*:只拦截项目根目录的第一级请求；/**：拦截项目根目录及其子目录的请求 -->
+				<mvc:mapping path="/*/*"/>
+			<!-- 需排除拦截的地址 -->
+			<!-- <mvc:exclude-mapping path="/web/*/*"/> -->
+			<!-- 拦截器的实现类 -->
+			<bean class="com.spring.interceptor.AuthInterceptor"/>
+		</mvc:interceptor>
+	</mvc:interceptors>
+</beans>
